@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum HolidaySource {
+  auto
+  manual
+}
+
+enum DayType {
+  weekday
+  saturday
+  sunday
+  public_holiday
+}
+
+model Employee {
+  id     Int     @id @default(autoincrement())
+  name   String
+  active Boolean @default(true)
+
+  submissions Submission[]
+
+  @@map("employees")
+}
+
+model Store {
+  id                  Int     @id @default(autoincrement())
+  name                String
+  active              Boolean @default(true)
+  commissionThreshold Decimal @map("commission_threshold") @db.Decimal(10, 2)
+  commissionRate      Decimal @default(0.05) @map("commission_rate") @db.Decimal(5, 4)
+
+  submissions Submission[]
+
+  @@map("stores")
+}
+
+model PublicHoliday {
+  id     Int           @id @default(autoincrement())
+  date   DateTime      @db.Date
+  name   String
+  source HolidaySource
+
+  @@unique([date])
+  @@map("public_holidays")
+}
+
+model Submission {
+  id   Int      @id @default(autoincrement())
+  date DateTime @db.Date
+
+  employeeId Int      @map("employee_id")
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  storeId Int   @map("store_id")
+  store   Store @relation(fields: [storeId], references: [id], onDelete: Restrict)
+
+  eftposAmount Decimal @map("eftpos_amount") @db.Decimal(10, 2)
+  cashAmount   Decimal @map("cash_amount") @db.Decimal(10, 2)
+
+  clockIn  DateTime @map("clock_in") @db.Time(0)
+  clockOut DateTime @map("clock_out") @db.Time(0)
+
+  baseHourlyWage Decimal @map("base_hourly_wage") @db.Decimal(10, 2)
+
+  dayType DayType @map("day_type")
+
+  commission      Decimal @default(0) @db.Decimal(10, 2)
+  extraCommission Decimal @default(0) @map("extra_commission") @db.Decimal(10, 2)
+
+  transportReasonUsed Boolean @default(false) @map("transport_reason_used")
+  publicHoliday       Boolean @default(false) @map("public_holiday")
+  transportFee        Decimal @default(0) @map("transport_fee") @db.Decimal(10, 2)
+
+  totalWage Decimal @default(0) @map("total_wage") @db.Decimal(10, 2)
+
+  @@index([employeeId])
+  @@index([storeId])
+  @@index([date])
+  @@map("submissions")
+}
